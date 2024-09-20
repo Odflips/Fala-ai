@@ -70,7 +70,7 @@ function mostrarNotificacion() {
     if ('Notification' in window && Notification.permission === "granted") {
         const notification = new Notification("Nuevo mensaje de audio", {
             body: "Haz clic para escuchar el nuevo mensaje",
-            icon: "/path-to-your-icon.png" // Puedes agregar un ícono personalizado si lo deseas
+            icon: "/images/icon.png" // Ruta del ícono de la notificación
         });
 
         notification.onclick = () => {
