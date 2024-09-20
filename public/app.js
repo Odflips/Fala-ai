@@ -43,22 +43,30 @@ navigator.mediaDevices.getUserMedia({ audio: true })
         };
 
         // Iniciar grabación cuando se presiona el botón
-        talkButton.addEventListener("mousedown", () => {
+        const startRecording = () => {
             audioChunks = [];
             mediaRecorder.start();
             statusText.textContent = "Estado: Grabando...";
             isRecording = true;
-        });
+        };
 
         // Detener grabación cuando se suelta el botón
-        talkButton.addEventListener("mouseup", () => {
+        const stopRecording = () => {
             if (isRecording) {
                 mediaRecorder.stop();
                 statusText.textContent = "Estado: Procesando grabación...";
                 isRecording = false;
             }
-        });
+        };
 
+        // Eventos para dispositivos de escritorio
+        talkButton.addEventListener("mousedown", startRecording);
+        talkButton.addEventListener("mouseup", stopRecording);
+        
+        // Eventos para dispositivos móviles
+        talkButton.addEventListener("touchstart", startRecording);
+        talkButton.addEventListener("touchend", stopRecording);
+        
     })
     .catch(error => {
         console.error("Error al acceder al micrófono:", error);
