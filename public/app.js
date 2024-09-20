@@ -7,6 +7,15 @@ const talkButton = document.getElementById("talkButton");
 const statusText = document.getElementById("status");
 const audioPlayback = document.getElementById("audioPlayback");
 
+// Solicitar permiso para las notificaciones del navegador
+if ('Notification' in window) {
+    Notification.requestPermission().then(permission => {
+        if (permission === "denied") {
+            console.warn("Permiso para notificaciones denegado");
+        }
+    });
+}
+
 // Solicitar permiso para usar el micrófono
 navigator.mediaDevices.getUserMedia({ audio: true })
     .then(stream => {
@@ -56,6 +65,33 @@ navigator.mediaDevices.getUserMedia({ audio: true })
         statusText.textContent = "Estado: Error al acceder al micrófono";
     });
 
+// Mostrar una notificación cuando se recibe un audio nuevo
+function mostrarNotificacion() {
+    if ('Notification' in window && Notification.permission === "granted") {
+        const notification = new Notification("Nuevo mensaje de audio", {
+            body: "Haz clic para escuchar el nuevo mensaje",
+            icon: "/path-to-your-icon.png" // Puedes agregar un ícono personalizado si lo deseas
+        });
+
+        notification.onclick = () => {
+            window.focus(); // Lleva la ventana al frente si está en segundo plano
+        };
+    }
+}
+
+// Mostrar una alerta visual en la página web
+function mostrarAlertaVisual() {
+    const alertDiv = document.createElement('div');
+    alertDiv.textContent = "Nuevo audio recibido";
+    alertDiv.className = 'alerta-visual';
+    document.body.appendChild(alertDiv);
+
+    // Remover la alerta después de unos segundos
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000); // La alerta desaparece después de 5 segundos
+}
+
 // Escuchar cuando el servidor envía audio desde otros usuarios
 socket.on('audio-message', (audioBuffer) => {
     const blob = new Blob([audioBuffer], { type: 'audio/webm' });
@@ -63,4 +99,8 @@ socket.on('audio-message', (audioBuffer) => {
     audioPlayback.src = audioUrl;
     audioPlayback.play();
     statusText.textContent = "Estado: Reproduciendo audio recibido";
+
+    // Mostrar notificación y alerta visual
+    mostrarNotificacion();
+    mostrarAlertaVisual();
 });
