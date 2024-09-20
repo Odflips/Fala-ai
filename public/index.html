@@ -3,18 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Walk & Talk</title>
+    <title>Walkie Talkie - Salas de Comunicación</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
+    <h1>Walkie Talkie - Salas de Comunicación</h1>
+
     <div class="container">
-        <h1>Walk & Talk</h1>
-        <p>Mantén presionado el botón para hablar</p>
-        <button id="talkButton" class="letras">Aperte</button>
-        <p id="status">Estado: Esperando...</p>
-        <audio id="audioPlayback" controls></audio>
+        <!-- Botones para las diferentes salas -->
+        <button class="button" onclick="goToRoom(1)">Sala 1</button>
+        <button class="button" onclick="goToRoom(2)">Sala 2</button>
+        <button class="button" onclick="goToRoom(3)">Sala 3</button>
+        <button class="button" onclick="goToRoom(4)">Sala 4</button>
+        <button class="button" onclick="goToRoom(5)">Sala 5</button>
+        <button class="button" onclick="goToRoom(6)">Sala 6</button>
+        <button class="button" onclick="goToRoom(7)">Sala 7</button>
+        <button class="button" onclick="goToRoom(8)">Sala 8</button>
+        <button class="button" onclick="goToRoom(9)">Sala 9</button>
+        <button class="button" onclick="goToRoom(10)">Sala 10</button>
     </div>
-    <script src="/socket.io/socket.io.js"></script> <!-- Conexión con el servidor Socket.IO -->
-    <script src="app.js"></script>
+
+    <div class="footer">
+        <p>Selecciona una sala para empezar a comunicarte.</p>
+    </div>
+
+    <script>
+        // Función para redirigir a diferentes salas
+        function goToRoom(roomNumber) {
+            // Redirigir al usuario a la sala correspondiente
+            window.location.href = `/walkie-talkie/room/${roomNumber}`;
+        }
+    </script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+    
+
 </body>
 </html>

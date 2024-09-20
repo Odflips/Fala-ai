@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walkie Talkie - Sala</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        button {
+            padding: 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            height: 200px;
+            width: 200px;
+            border-radius: 50%;
+        }
+
+        button:active {
+            background-color: #45a049;
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #333;
+        }
+
+        audio {
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        .letras {
+            font-size: 10px;
+        }
+
+        .alerta-visual {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 15px;
+            background-color: #f44336; /* Color rojo */
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 9999; /* Asegura que esté por encima de otros elementos */
+            animation: fadeInOut 5s ease-in-out;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Sala de Walkie Talkie</h1>
+    <p id="status">Estado: Conectado</p>
+    <button id="talkButton">Presiona y habla</button>
+    <audio id="audioPlayback" controls></audio>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const talkButton = document.getElementById("talkButton");
+        const statusText = document.getElementById("status");
+        const audioPlayback = document.getElementById("audioPlayback");
+        let mediaRecorder;
+        let audioChunks = [];
+
+        // Obtener el número de sala desde la URL
+        const roomNumber = window.location.pathname.split('/').pop();
+
+        // Unirse a la sala específica
+        socket.emit('join-room', roomNumber);
+
+        // Acceder al micrófono
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = event => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    audioChunks = [];
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const arrayBuffer = reader.result;
+                        socket.emit('audio-message', arrayBuffer);
+                    };
+                    reader.readAsArrayBuffer(audioBlob);
+                };
+
+                talkButton.addEventListener("mousedown", () => {
+                    audioChunks = [];
+                    mediaRecorder.start();
+                    statusText.textContent = "Estado: Grabando...";
+                });
+
+                talkButton.addEventListener("mouseup", () => {
+                    mediaRecorder.stop();
+                    statusText.textContent = "Estado: Procesando grabación...";
+                });
+            })
+            .catch(error => {
+                console.error("Error al acceder al micrófono:", error);
+                statusText.textContent = "Estado: Error al acceder al micrófono";
+            });
+
+        // Reproducir audio recibido
+        socket.on('audio-message', (audioBuffer) => {
+            const blob = new Blob([audioBuffer], { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(blob);
+            audioPlayback.src = audioUrl;
+            audioPlayback.play();
+        });
+    </script>
+
+</body>
+</html>

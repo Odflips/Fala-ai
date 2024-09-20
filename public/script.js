@@ -11,7 +11,6 @@ const audioPlayback = document.getElementById("audioPlayback");
 navigator.mediaDevices.getUserMedia({ audio: true })
     .then(stream => {
         mediaRecorder = new MediaRecorder(stream);
-
         mediaRecorder.ondataavailable = event => {
             if (event.data.size > 0) {
                 audioChunks.push(event.data);
@@ -21,19 +20,17 @@ navigator.mediaDevices.getUserMedia({ audio: true })
         mediaRecorder.onstop = () => {
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             audioChunks = [];
-
-            // Convertir el Blob a ArrayBuffer para transmitirlo a través de Socket.IO
             const reader = new FileReader();
             reader.onloadend = () => {
                 const arrayBuffer = reader.result;
-                socket.emit('audio-message', arrayBuffer); // Enviar audio al servidor
+                socket.emit('audio-message', arrayBuffer);
+                statusText.textContent = "Estado: Grabación enviada"; // Cambiar estado aquí
             };
             reader.readAsArrayBuffer(audioBlob);
-
-            statusText.textContent = "Estado: Grabación enviada";
+            statusText.textContent = "Estado: Procesando grabación..."; // Cambiar el estado a "Procesando" inmediatamente
         };
 
-        // Iniciar grabación cuando se presiona el botón
+        // Iniciar grabación
         const startRecording = () => {
             audioChunks = [];
             mediaRecorder.start();
@@ -41,85 +38,64 @@ navigator.mediaDevices.getUserMedia({ audio: true })
             isRecording = true;
         };
 
-        // Detener grabación cuando se suelta el botón
+        // Detener grabación
         const stopRecording = () => {
             if (isRecording) {
                 mediaRecorder.stop();
-                statusText.textContent = "Estado: Procesando grabación...";
                 isRecording = false;
             }
         };
 
-        // Eventos para dispositivos de escritorio
+        // Eventos para dispositivos de escritorio y móviles
         talkButton.addEventListener("mousedown", startRecording);
         talkButton.addEventListener("mouseup", stopRecording);
-        
-        // Eventos para dispositivos móviles
         talkButton.addEventListener("touchstart", startRecording);
         talkButton.addEventListener("touchend", stopRecording);
-        
     })
     .catch(error => {
         console.error("Error al acceder al micrófono:", error);
         statusText.textContent = "Estado: Error al acceder al micrófono";
     });
 
-// Solicitar permiso para las notificaciones del navegador
-function solicitarPermisoNotificacion() {
-    if ('Notification' in window) {
-        Notification.requestPermission().then(permission => {
-            if (permission === "denied") {
-                console.warn("Permiso para notificaciones denegado");
-            }
-        });
-    }
-}
-
-// Mostrar una notificación cuando se recibe un audio nuevo
+// Notificaciones y alertas visuales
 function mostrarNotificacion() {
     if ('Notification' in window) {
         if (Notification.permission === "granted") {
             const notification = new Notification("Nuevo mensaje de audio", {
                 body: "Haz clic para escuchar el nuevo mensaje",
-                icon: "/images/icon.png" // Ruta del ícono de la notificación
+                icon: "/images/icon.png"
             });
-
             notification.onclick = () => {
-                window.focus(); // Lleva la ventana al frente si está en segundo plano
+                window.focus();
             };
         } else if (Notification.permission !== "denied") {
-            solicitarPermisoNotificacion(); // Solicitar permiso si aún no ha sido denegado
+            Notification.requestPermission(); // Solicitar permiso
         }
-    } else {
-        console.warn("Este navegador no soporta notificaciones");
     }
 }
 
-// Mostrar una alerta visual en la página web
 function mostrarAlertaVisual() {
     const alertDiv = document.createElement('div');
     alertDiv.textContent = "Nuevo audio recibido";
     alertDiv.className = 'alerta-visual';
     document.body.appendChild(alertDiv);
-
-    // Remover la alerta después de unos segundos
     setTimeout(() => {
         alertDiv.remove();
-    }, 5000); // La alerta desaparece después de 5 segundos
+    }, 5000);
 }
 
-// Escuchar cuando el servidor envía audio desde otros usuarios
+// Reproducir audio recibido
 socket.on('audio-message', (audioBuffer) => {
     const blob = new Blob([audioBuffer], { type: 'audio/webm' });
     const audioUrl = URL.createObjectURL(blob);
     audioPlayback.src = audioUrl;
     audioPlayback.play();
     statusText.textContent = "Estado: Reproduciendo audio recibido";
-
-    // Mostrar notificación y alerta visual
     mostrarNotificacion();
     mostrarAlertaVisual();
 });
 
 // Solicitar permisos de notificación al cargar la página
-solicitarPermisoNotificacion();
+if ('Notification' in window) {
+    Notification.requestPermission();
+}
