@@ -7,15 +7,6 @@ const talkButton = document.getElementById("talkButton");
 const statusText = document.getElementById("status");
 const audioPlayback = document.getElementById("audioPlayback");
 
-// Solicitar permiso para las notificaciones del navegador
-if ('Notification' in window) {
-    Notification.requestPermission().then(permission => {
-        if (permission === "denied") {
-            console.warn("Permiso para notificaciones denegado");
-        }
-    });
-}
-
 // Solicitar permiso para usar el micrófono
 navigator.mediaDevices.getUserMedia({ audio: true })
     .then(stream => {
@@ -73,17 +64,34 @@ navigator.mediaDevices.getUserMedia({ audio: true })
         statusText.textContent = "Estado: Error al acceder al micrófono";
     });
 
+// Solicitar permiso para las notificaciones del navegador
+function solicitarPermisoNotificacion() {
+    if ('Notification' in window) {
+        Notification.requestPermission().then(permission => {
+            if (permission === "denied") {
+                console.warn("Permiso para notificaciones denegado");
+            }
+        });
+    }
+}
+
 // Mostrar una notificación cuando se recibe un audio nuevo
 function mostrarNotificacion() {
-    if ('Notification' in window && Notification.permission === "granted") {
-        const notification = new Notification("Nuevo mensaje de audio", {
-            body: "Haz clic para escuchar el nuevo mensaje",
-            icon: "/images/icon.png" // Ruta del ícono de la notificación
-        });
+    if ('Notification' in window) {
+        if (Notification.permission === "granted") {
+            const notification = new Notification("Nuevo mensaje de audio", {
+                body: "Haz clic para escuchar el nuevo mensaje",
+                icon: "/images/icon.png" // Ruta del ícono de la notificación
+            });
 
-        notification.onclick = () => {
-            window.focus(); // Lleva la ventana al frente si está en segundo plano
-        };
+            notification.onclick = () => {
+                window.focus(); // Lleva la ventana al frente si está en segundo plano
+            };
+        } else if (Notification.permission !== "denied") {
+            solicitarPermisoNotificacion(); // Solicitar permiso si aún no ha sido denegado
+        }
+    } else {
+        console.warn("Este navegador no soporta notificaciones");
     }
 }
 
@@ -112,3 +120,6 @@ socket.on('audio-message', (audioBuffer) => {
     mostrarNotificacion();
     mostrarAlertaVisual();
 });
+
+// Solicitar permisos de notificación al cargar la página
+solicitarPermisoNotificacion();
